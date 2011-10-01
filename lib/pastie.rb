@@ -7,11 +7,11 @@ module Redcar
 
     def self.keymaps
       linwin = Keymap.build("main", [:linux, :windows]) do
-        link "Ctrl+Shift+P", Pastie::PasteSelection
+        link "Ctrl+Shift+Alt+G", Pastie::PasteSelection
       end
 
       osx = Keymap.build("main", :osx) do
-        link "Cmd+Shift+P", Pastie::PasteSelection
+        link "Cmd+G", Pastie::PasteSelection
       end
 
       [linwin, osx]
@@ -59,11 +59,17 @@ module Redcar
         req.basic_auth(storage['login'] + '/token', storage['token'])
         req.set_form_data({ "files[#{tab.title}]" => text })
         res = Net::HTTP.new(uri.host, uri.port).start {|http| http.request(req) }
+        
         if(res.code == '200')
-          'http://gist.github.com/' + res.body.match(/repo>(\d+)</)[1]
+          gist_url = 'http://gist.github.com/' + res.body.match(/repo>(\d+)</)[1]
+          message = "Gist created: #{gist_url}"
+          message += "\n(url copied to clippoard)" if storage['auto_copy_to_clipboard']
         else
-          false
+          message = "Error creating Gist: #{res.body}"
         end
+        
+        Application::Dialog.message_box(message)
+        gist_url || false
       end
     end
       
